@@ -108,6 +108,12 @@ def restricted_package_show(context, data_dict):
     restricted_package_metadata['resources'] = _restricted_resource_list_hide_fields(
         context, restricted_package_metadata.get('resources', []))
 
+    restricted_package_metadata['resources'] = filter(
+        lambda x: x['restricted'] == '',
+        restricted_package_metadata.get('resources', [])
+        )
+    restricted_package_metadata['num_resources'] = len(
+        restricted_package_metadata['resources'])
     return (restricted_package_metadata)
 
 
@@ -126,6 +132,15 @@ def restricted_resource_search(context, data_dict):
         else:
             restricted_resource_search_result[key] = value
 
+    # Remove restricted resources.
+    # Note, that private resources are now excluded from search even for admins.
+    # An admin should go to package page to find a resource.
+    restricted_resource_search_result['results'] = filter(
+        lambda x: x['restricted'] == '',
+        restricted_resource_search_result['results']
+        )
+    restricted_resource_search_result['count'] = len(
+        restricted_resource_search_result['results'])
     return restricted_resource_search_result
 
 
