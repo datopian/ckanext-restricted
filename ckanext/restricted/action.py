@@ -135,12 +135,12 @@ def restricted_resource_search(context, data_dict):
     # Remove restricted resources.
     # Note, that private resources are now excluded from search even for admins.
     # An admin should go to package page to find a resource.
-    restricted_resource_search_result['results'] = filter(
+    restricted_resource_search_result['results'] = list(filter(
         lambda x: x.get('restricted', '') == '' or json.loads(x['restricted'])['level'] == 'public',
         restricted_resource_search_result['results']
-        )
-    restricted_resource_search_result['count'] = len(
-        restricted_resource_search_result['results'])
+        ))
+
+    restricted_resource_search_result['count'] = len(restricted_resource_search_result['results'])
     return restricted_resource_search_result
 
 
