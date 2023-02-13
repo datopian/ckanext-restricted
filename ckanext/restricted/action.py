@@ -108,13 +108,7 @@ def restricted_package_show(context, data_dict):
     restricted_package_metadata['resources'] = _restricted_resource_list_hide_fields(
         context, restricted_package_metadata.get('resources', []))
 
-    restricted_package_metadata['resources'] = list(filter(
-        lambda x: x.get('restricted', '') == '' or json.loads(x['restricted'])['level'] == 'public',
-        restricted_package_metadata.get('resources', []))
-        )
-    restricted_package_metadata['num_resources'] = len(
-        restricted_package_metadata['resources'])
-    return (restricted_package_metadata)
+    return restricted_package_metadata
 
 
 @side_effect_free

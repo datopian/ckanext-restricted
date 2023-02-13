@@ -1,6 +1,7 @@
 # coding: utf8
 
 from __future__ import unicode_literals
+from flask import Blueprint
 from ckan.lib.plugins import DefaultTranslation
 import ckan.logic
 import ckan.plugins as plugins
@@ -8,7 +9,7 @@ import ckan.plugins.toolkit as toolkit
 from ckanext.restricted import action
 from ckanext.restricted import auth
 from ckanext.restricted import helpers
-from ckanext.restricted import logic
+from ckanext.restricted.controller import RestrictedView
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -24,6 +25,7 @@ class RestrictedPlugin(plugins.SingletonPlugin, DefaultTranslation):
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IRoutes, inherit=True)
+    plugins.implements(plugins.IBlueprint)
     plugins.implements(plugins.IResourceController, inherit=True)
 
     # IConfigurer
@@ -50,14 +52,13 @@ class RestrictedPlugin(plugins.SingletonPlugin, DefaultTranslation):
         return {'resource_show': auth.restricted_resource_show,
                 'resource_view_show': auth.restricted_resource_show}
 
-    # IRoutes
-    def before_map(self, map_):
-        map_.connect(
-            'restricted_request_access',
-            '/dataset/{package_id}/restricted_request_access/{resource_id}',
-            controller='ckanext.restricted.controller:RestrictedController',
-            action='restricted_request_access_form')
-        return map_
+    
+    # Ibluprints
+    def get_blueprint(self):
+        restricted = Blueprint(u'restricted', __name__)
+        restricted.add_url_rule('/dataset/<package_id>/restricted_request_access/<resource_id>', view_func=RestrictedView.as_view(str(u'request_access')))
+        return restricted
+        
 
     # IResourceController
     def before_update(self, context, current, resource):

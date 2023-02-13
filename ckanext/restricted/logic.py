@@ -156,8 +156,7 @@ def restricted_mail_allowed_user(user_id, resource):
 
 
 def restricted_allowed_user_mail_body(user, resource):
-    resource_link = toolkit.url_for(
-        controller='package', action='resource_read',
+    resource_link = toolkit.url_for('dataset_resource.read',
         id=resource.get('package_id'), resource_id=resource.get('id'))
 
     extra_vars = {
