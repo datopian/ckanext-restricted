@@ -178,7 +178,7 @@ class RestrictedView(MethodView):
 
             for admin_id in org_admin_user_ids:
                 user = model.User.get(admin_id)
-                if 'default' != user.name: 
+                if 'default' != user.name and user.email: 
                     email_dict.update({
                         user.email: user.display_name
                     })
