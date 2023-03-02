@@ -6,7 +6,7 @@
 * {% trans %}User:{% endtrans %} {{ user_name }} ({{ user_email }})
 * {% trans %}Message:{% endtrans %} {{ message }}
 
-{% trans %}You can allow this user to access you resource by adding {{ user_id }} to the list of allowed users.{% endtrans %}
+{% trans %}You can allow this user to access your resource by adding {{ user_id }} to the list of allowed users.{% endtrans %}
 {% trans %}If you have editor rights, you can edit the resource in this link: {{ resource_edit_link }}.{% endtrans %}
 {% trans %}If you have any questions about how to proceed with this request, please contact the {{ site_title }} support at {{ admin_email_to }}.{% endtrans %}
 
