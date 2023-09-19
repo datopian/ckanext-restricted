@@ -89,12 +89,11 @@ def restricted_resource_view_list(context, data_dict):
 
 @side_effect_free
 def restricted_package_show(context, data_dict):
+    context['with_capacity'] = False
 
     package_metadata = package_show(context, data_dict)
     # Ensure user who can edit can see the resource
 
-    context['with_capacity'] = False
-    
     if authz.is_authorized(
             'package_update', context,  package_metadata).get('success', False):
         return package_metadata
