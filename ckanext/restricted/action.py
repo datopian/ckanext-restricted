@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import ckan.authz as authz
 from ckan.common import _
 
-from ckan.lib.base import render_jinja2
+from ckan.lib.base import render
 from ckan.lib.mailer import mail_recipient
 from ckan.lib.mailer import MailerException
 import ckan.logic
