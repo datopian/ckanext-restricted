@@ -9,10 +9,9 @@ from ckanext.restricted import logic
 from logging import getLogger
 log = getLogger(__name__)
 
-
-@toolkit.auth_allow_anonymous_access
 def restricted_resource_show(context, data_dict=None):
-
+    if toolkit.current_user.is_anonymous:
+        return {'success': False}
     # Ensure user who can edit the package can see the resource
     resource = data_dict.get('resource', context.get('resource', {}))
     if not resource:

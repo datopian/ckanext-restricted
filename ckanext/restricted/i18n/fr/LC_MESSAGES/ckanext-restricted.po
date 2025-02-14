@@ -256,7 +256,7 @@ msgstr "Un utilisateur demande l'accès à votre donnée %(site_title)s :"
 #: ckanext/restricted/templates/restricted/emails/restricted_access_request.txt:9
 #, python-format
 msgid ""
-"You can allow this user to access you resource by adding %(user_id)s to "
+"You can allow this user to access your resource by adding %(user_id)s to "
 "the list of allowed users."
 msgstr ""
 "Vous pouvez autoriser l'utilisateur à accéder à cette ressource en ajoutant %(user_id)s "

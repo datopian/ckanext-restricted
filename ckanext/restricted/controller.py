@@ -3,8 +3,8 @@
 from __future__ import unicode_literals
 from ckan.common import _
 from ckan.common import request
+from ckan.lib.base import render as render_jinja2
 import ckan.lib.base as base
-from ckan.lib.base import render_jinja2
 import ckan.lib.captcha as captcha
 import ckan.lib.helpers as h
 import ckan.lib.mailer as mailer
@@ -50,13 +50,13 @@ class RestrictedController(toolkit.BaseController):
 
             resource_link = toolkit.url_for(
                 action='resource_read',
-                controller='package',
+                controller='dataset',
                 id=data.get('package_name'),
                 resource_id=data.get('resource_id'))
 
             resource_edit_link = toolkit.url_for(
                 action='resource_edit',
-                controller='package',
+                controller='dataset',
                 id=data.get('package_name'),
                 resource_id=data.get('resource_id'))
 
@@ -70,7 +70,7 @@ class RestrictedController(toolkit.BaseController):
                 'resource_name': data.get('resource_name', ''),
                 'resource_link': config.get('ckan.site_url') + resource_link,
                 'resource_edit_link': config.get('ckan.site_url') + resource_edit_link,
-                'package_name': data.get('resource_name', ''),
+                'package_name': data.get('package_name', ''),
                 'message': data.get('message', ''),
                 'admin_email_to': config.get('email_to', 'email_to_undefined')}
 

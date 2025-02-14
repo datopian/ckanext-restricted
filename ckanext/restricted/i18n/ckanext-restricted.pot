@@ -235,7 +235,7 @@ msgstr ""
 #: ckanext/restricted/templates/restricted/emails/restricted_access_request.txt:9
 #, python-format
 msgid ""
-"You can allow this user to access you resource by adding %(user_id)s to the "
+"You can allow this user to access your resource by adding %(user_id)s to the "
 "list of allowed users."
 msgstr ""
 
