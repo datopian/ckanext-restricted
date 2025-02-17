@@ -84,7 +84,6 @@ def restricted_user_create_and_notify(up_func, context, data_dict):
 @tk.side_effect_free
 def request_access_to_resource(context, data_dict):
     if toolkit.current_user.is_anonymous:
-        log.info('this not authorized?')
         raise NotAuthorized
     user = toolkit.get_action('user_show')(
         {'user': os.environ.get('CKAN_SYSADMIN_NAME')}, {'id': toolkit.current_user.id})
@@ -311,17 +310,10 @@ def _restricted_resource_list_hide_fields(context, resource_list):
         restricted_dict = restricted_get_restricted_dict(
             restricted_resource)
 
-        # hide fields to unauthorized users
-        # TODO this line is was not used then I commented
-        # authorized = auth.restricted_resource_show(
-        #     context, {'id': resource.get('id'), 'resource': resource}
-        # ).get('success', False)
-
         # hide other fields in restricted to everyone but dataset owner(s)
         if not authz.is_authorized(
-                'package_update', context, {'id': resource.get('package_id')}
+                'resource_show', context, {'id': resource.get('id')}
         ).get('success'):
-
             user_name = restricted_get_username_from_context(context)
 
             # hide partially other allowed user_names (keep own)

@@ -96,8 +96,6 @@ def restricted_request_access_form(package_id, resource_id, data=None, errors=No
                 404, _('Unknown exception retrieving dataset for the form'))
 
         data['resource_name'] = resource_name
-        data['maintainer_email'] = contact_details.get('contact_email', '')
-        data['maintainer_name'] = contact_details.get('contact_name', '')
     else:
         pkg_dict = data.get('pkg_dict', {})
 

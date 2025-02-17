@@ -266,7 +266,7 @@ def send_request_mail_to_org_admins(data):
         extra_vars = {
             'site_title': data.get('site_title') or config.get('ckan.site_title'),
             'site_url': data.get('site_url') or config.get('ckan.site_url'),
-            'maintainer_name': data.get('maintainer_name', 'Maintainer'),
+            'maintainer_name': 'Organisation Administrator',
             'user_id': data.get('user_id', 'the user id'),
             'user_name': data.get('user_name', ''),
             'user_email': data.get('user_email', ''),
