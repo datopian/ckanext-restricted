@@ -113,7 +113,7 @@ def update_request_status():
     # f"Resource {res.get('name')} {new_status} by {user.get('name')}"
     # _create_resource_activity(model.User.get(toolkit.c.user), res, pkg, f'resource-{new_status}', "Resource '%s' approved by %s")
 
-    resource_link = f"{os.environ.get('CKAN_FRONTEND_SITE_URL')}/@{pkg.get('organization').get('name')}/{pkg.get('name')}/r/{res.get('id')}"
+    resource_link = f"{os.environ.get('CKAN_FRONTEND_SITE_URL')}/{pkg.get('organization').get('name')}/{pkg.get('name')}"
     site_title = os.environ.get('CKAN_FRONTEND_SITE_TITLE')
     site_url = os.environ.get('CKAN_FRONTEND_SITE_URL')
 

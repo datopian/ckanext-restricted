@@ -12,5 +12,6 @@ def resource_request_access_schema(not_empty):
         # TODO maybe add the package_id to users request access to datasets as well
         "resource_id": [not_empty],
         "message": [not_empty],
+        "user_organization": [],
     }
     return schema
