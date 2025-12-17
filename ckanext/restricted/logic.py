@@ -5,7 +5,6 @@ import ckan.authz as authz
 from ckan.common import _
 from ckan.model.user import AnonymousUser
 
-from ckan.lib.base import render
 import ckan.lib.mailer as mailer
 import ckan.logic as logic
 import ckan.plugins.toolkit as toolkit
@@ -129,9 +128,9 @@ def restricted_check_user_resource_access(user, resource_dict, package_dict):
 
     return {
         "success": False,
-        "msg": (
-            "Resource access restricted to same " "organization ({}) members"
-        ).format(pkg_organization_id),
+        "msg": ("Resource access restricted to same organization ({}) members").format(
+            pkg_organization_id
+        ),
     }
 
 
@@ -165,16 +164,15 @@ def restricted_mail_allowed_user(user_id, resource):
 
     except Exception as e:
         log.warning(
-            (
-                "restricted_mail_allowed_user: " 'Failed to send mail to "{0}": {1}'
-            ).format(user_id, e)
+            ('restricted_mail_allowed_user: Failed to send mail to "{0}": {1}').format(
+                user_id, e
+            )
         )
 
 
 def restricted_allowed_user_mail_body(user, resource):
     resource_link = toolkit.url_for(
-        controller="package",
-        action="resource_read",
+        "resource.read",
         id=resource.get("package_id"),
         resource_id=resource.get("id"),
     )
@@ -188,11 +186,10 @@ def restricted_allowed_user_mail_body(user, resource):
         "resource_url": resource.get("url"),
     }
 
-    return render_jinja2("restricted/emails/restricted_user_allowed.txt", extra_vars)
+    return toolkit.render("restricted/emails/restricted_user_allowed.txt", extra_vars)
 
 
 def restricted_notify_allowed_users(previous_value, updated_resource):
-
     def _safe_json_loads(json_string, default={}):
         try:
             return json.loads(json_string)
