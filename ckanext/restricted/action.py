@@ -94,10 +94,14 @@ def restricted_resource_view_list(context, data_dict):
 
 @side_effect_free
 def restricted_package_show(context, data_dict):
-    # Sanitize context to prevent downstream errors with tags
-    safe_context = context.copy()
-    safe_context.pop("with_capacity", None)
-    package_metadata = package_show(safe_context, data_dict)
+    had_with_capacity = "with_capacity" in context
+    original_with_capacity = context.pop("with_capacity", None)
+    
+    try:
+        package_metadata = package_show(context, data_dict)
+    finally:
+        if had_with_capacity:
+            context["with_capacity"] = original_with_capacity
 
     # Ensure user who can edit can see the resource
     if authz.is_authorized("package_update", context, package_metadata).get(
