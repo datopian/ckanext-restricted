@@ -29,6 +29,10 @@ from logging import getLogger
 
 log = getLogger(__name__)
 
+# Thread-local context bridge for after_dataset_search
+import threading
+_search_context = threading.local()
+
 
 _get_or_bust = ckan.logic.get_or_bust
 
@@ -96,7 +100,7 @@ def restricted_resource_view_list(context, data_dict):
 def restricted_package_show(context, data_dict):
     had_with_capacity = "with_capacity" in context
     original_with_capacity = context.pop("with_capacity", None)
-    
+
     try:
         package_metadata = package_show(context, data_dict)
     finally:
@@ -104,9 +108,10 @@ def restricted_package_show(context, data_dict):
             context["with_capacity"] = original_with_capacity
 
     # Ensure user who can edit can see the resource
-    if authz.is_authorized("package_update", context, package_metadata).get(
+    is_editor = authz.is_authorized("package_update", context, package_metadata).get(
         "success", False
-    ):
+    )
+    if is_editor:
         return package_metadata
 
     # Custom authorization
@@ -115,8 +120,6 @@ def restricted_package_show(context, data_dict):
     else:
         restricted_package_metadata = dict(package_metadata.for_json())
 
-    # restricted_package_metadata['resources'] = _restricted_resource_list_url(
-    #     context, restricted_package_metadata.get('resources', []))
     restricted_package_metadata["resources"] = _restricted_resource_list_hide_fields(
         context, restricted_package_metadata.get("resources", [])
     )
@@ -168,24 +171,13 @@ def restricted_resource_search(context, data_dict):
 
 @side_effect_free
 def restricted_package_search(context, data_dict):
-    package_search_result = package_search(context, data_dict)
-
-    restricted_package_search_result = {}
-
-    for key, value in package_search_result.items():
-        if key == "results":
-            restricted_package_search_result_list = []
-            for package in value:
-                restricted_package_search_result_list.append(
-                    restricted_package_show(context, {"id": package.get("id")})
-                )
-            restricted_package_search_result[key] = (
-                restricted_package_search_result_list
-            )
-        else:
-            restricted_package_search_result[key] = value
-
-    return restricted_package_search_result
+    """Lightweight wrapper: stores caller context for after_dataset_search, then
+    delegates to core package_search (no N+1 loop)."""
+    _search_context.context = context
+    try:
+        return package_search(context, data_dict)
+    finally:
+        _search_context.context = None
 
 
 @side_effect_free
@@ -238,9 +230,10 @@ def _restricted_resource_list_hide_fields(context, resource_list):
         restricted_dict = logic.restricted_get_restricted_dict(restricted_resource)
 
         # hide fields to unauthorized users
-        authorized = auth.restricted_resource_show(
-            context, {"id": resource.get("id"), "resource": resource}
-        ).get("success", False)
+        # NOTE: `authorized` is never used — call disabled for performance
+        # authorized = auth.restricted_resource_show(
+        #     context, {"id": resource.get("id"), "resource": resource}
+        # ).get("success", False)
 
         # hide other fields in restricted to everyone but dataset owner(s)
         if not authz.is_authorized(
