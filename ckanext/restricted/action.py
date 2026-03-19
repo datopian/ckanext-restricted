@@ -1,7 +1,6 @@
 # coding: utf8
 
 from __future__ import unicode_literals
-import ckan.authz as authz
 from ckan.common import _
 
 import ckan.plugins.toolkit as toolkit
@@ -9,14 +8,11 @@ from ckan.lib.mailer import mail_recipient
 from ckan.lib.mailer import MailerException
 import ckan.logic
 from ckan.logic.action.create import user_create
-from ckan.logic.action.get import package_search
-from ckan.logic.action.get import package_show
 from ckan.logic.action.get import resource_search
 from ckan.logic.action.get import resource_view_list
 from ckan.logic import side_effect_free
 from ckanext.restricted import auth
 from ckanext.restricted import logic
-import json
 
 try:
     # CKAN 2.7 and later
@@ -28,10 +24,6 @@ except ImportError:
 from logging import getLogger
 
 log = getLogger(__name__)
-
-# Thread-local context bridge for after_dataset_search
-import threading
-_search_context = threading.local()
 
 
 _get_or_bust = ckan.logic.get_or_bust
@@ -97,87 +89,20 @@ def restricted_resource_view_list(context, data_dict):
 
 
 @side_effect_free
-def restricted_package_show(context, data_dict):
-    had_with_capacity = "with_capacity" in context
-    original_with_capacity = context.pop("with_capacity", None)
-
-    try:
-        package_metadata = package_show(context, data_dict)
-    finally:
-        if had_with_capacity:
-            context["with_capacity"] = original_with_capacity
-
-    # Ensure user who can edit can see the resource
-    is_editor = authz.is_authorized("package_update", context, package_metadata).get(
-        "success", False
-    )
-    if is_editor:
-        return package_metadata
-
-    # Custom authorization
-    if isinstance(package_metadata, dict):
-        restricted_package_metadata = dict(package_metadata)
-    else:
-        restricted_package_metadata = dict(package_metadata.for_json())
-
-    restricted_package_metadata["resources"] = _restricted_resource_list_hide_fields(
-        context, restricted_package_metadata.get("resources", [])
-    )
-
-    restricted_package_metadata["resources"] = list(
-        filter(
-            lambda x: x.get("restricted", "") == ""
-            or json.loads(x["restricted"])["level"] == "public",
-            restricted_package_metadata.get("resources", []),
-        )
-    )
-    restricted_package_metadata["num_resources"] = len(
-        restricted_package_metadata["resources"]
-    )
-    return restricted_package_metadata
-
-
-@side_effect_free
 def restricted_resource_search(context, data_dict):
     resource_search_result = resource_search(context, data_dict)
 
-    restricted_resource_search_result = {}
+    # Filter resources in-memory: keep only public or unrestricted
+    filtered = []
+    for resource in resource_search_result.get("results", []):
+        restricted_dict = logic.restricted_get_restricted_dict(resource)
+        level = restricted_dict.get("level", "public")
+        if not level or level == "public":
+            filtered.append(resource)
 
-    for key, value in resource_search_result.items():
-        if key == "results":
-            # restricted_resource_search_result[key] = \
-            #     _restricted_resource_list_url(context, value)
-            restricted_resource_search_result[key] = (
-                _restricted_resource_list_hide_fields(context, value)
-            )
-        else:
-            restricted_resource_search_result[key] = value
-
-    # Remove restricted resources.
-    # Note, that private resources are now excluded from search even for admins.
-    # An admin should go to package page to find a resource.
-    restricted_resource_search_result["results"] = list(
-        filter(
-            lambda x: x.get("restricted", "") == ""
-            or json.loads(x["restricted"])["level"] == "public",
-            restricted_resource_search_result["results"],
-        )
-    )
-    restricted_resource_search_result["count"] = len(
-        restricted_resource_search_result["results"]
-    )
-    return restricted_resource_search_result
-
-
-@side_effect_free
-def restricted_package_search(context, data_dict):
-    """Lightweight wrapper: stores caller context for after_dataset_search, then
-    delegates to core package_search (no N+1 loop)."""
-    _search_context.context = context
-    try:
-        return package_search(context, data_dict)
-    finally:
-        _search_context.context = None
+    resource_search_result["results"] = filtered
+    resource_search_result["count"] = len(filtered)
+    return resource_search_result
 
 
 @side_effect_free
@@ -206,63 +131,3 @@ def restricted_check_access(context, data_dict):
     return logic.restricted_check_user_resource_access(
         user_name, resource_dict, package_dict
     )
-
-
-# def _restricted_resource_list_url(context, resource_list):
-#     restricted_resources_list = []
-#     for resource in resource_list:
-#         authorized = auth.restricted_resource_show(
-#             context, {'id': resource.get('id'), 'resource': resource}).get('success', False)
-#         restricted_resource = dict(resource)
-#         if not authorized:
-#             restricted_resource['url'] = _('Not Authorized')
-#         restricted_resources_list += [restricted_resource]
-#     return restricted_resources_list
-
-
-def _restricted_resource_list_hide_fields(context, resource_list):
-    restricted_resources_list = []
-    for resource in resource_list:
-        # copy original resource
-        restricted_resource = dict(resource)
-
-        # get the restricted fields
-        restricted_dict = logic.restricted_get_restricted_dict(restricted_resource)
-
-        # hide fields to unauthorized users
-        # NOTE: `authorized` is never used — call disabled for performance
-        # authorized = auth.restricted_resource_show(
-        #     context, {"id": resource.get("id"), "resource": resource}
-        # ).get("success", False)
-
-        # hide other fields in restricted to everyone but dataset owner(s)
-        if not authz.is_authorized(
-            "package_update", context, {"id": resource.get("package_id")}
-        ).get("success"):
-            user_name = logic.restricted_get_username_from_context(context)
-
-            # hide partially other allowed user_names (keep own)
-            allowed_users = []
-            for user in restricted_dict.get("allowed_users"):
-                if len(user.strip()) > 0:
-                    if user_name == user:
-                        allowed_users.append(user_name)
-                    else:
-                        allowed_users.append(user[0:3] + "*****" + user[-2:])
-
-            new_restricted = json.dumps(
-                {
-                    "level": restricted_dict.get("level"),
-                    "allowed_users": ",".join(allowed_users),
-                }
-            )
-            extras_restricted = resource.get("extras", {}).get("restricted", {})
-            if extras_restricted:
-                restricted_resource["extras"]["restricted"] = new_restricted
-
-            field_restricted_field = resource.get("restricted", {})
-            if field_restricted_field:
-                restricted_resource["restricted"] = new_restricted
-
-        restricted_resources_list += [restricted_resource]
-    return restricted_resources_list
