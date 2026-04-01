@@ -40,6 +40,9 @@ def restricted_user_create_and_notify(context, data_dict):
             )
         return body
 
+    # Default new users to have email notifications enabled
+    data_dict.setdefault('activity_streams_email_notifications', True)
+
     user_dict = user_create(context, data_dict)
 
     # Send your email, check ckan.lib.mailer for params
