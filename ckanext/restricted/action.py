@@ -82,13 +82,21 @@ def restricted_resource_view_list(context, data_dict):
     resource = model.Resource.get(id)
     if not resource:
         raise NotFound
-    authorized = auth.restricted_resource_show(
-        context, {"id": resource.get("id"), "resource": resource}
-    ).get("success", False)
-    if not authorized:
-        return []
-    else:
-        return resource_view_list(context, data_dict)
+
+    # Public resources are the common case and don't need an authorization
+    # round-trip, so check the restricted level in-memory first.
+    restricted_dict = logic.restricted_get_restricted_dict(
+        {"extras": getattr(resource, "extras", None) or {}}
+    )
+    level = restricted_dict.get("level", "public")
+    if level and level != "public":
+        authorized = auth.restricted_resource_show(
+            context, {"id": resource.id, "resource": resource}
+        ).get("success", False)
+        if not authorized:
+            return []
+
+    return resource_view_list(context, data_dict)
 
 
 @side_effect_free
